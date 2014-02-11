@@ -280,3 +280,80 @@ def export_as_xls(queryset, fields=None, header=None, filename=None, options=Non
 
     book.save(response)
     return response
+
+
+xlsx_options_default = {'date_format': 'd/m/Y',
+                       'datetime_format': 'N j, Y, P',
+                       'time_format': 'P',
+                       'sheet_name': 'Sheet1',
+                       'DateField': 'DD MMM-YY',
+                       'DateTimeField': 'DD MMD YY hh:mm',
+                       'TimeField': 'hh:mm',
+                       'IntegerField': '#,##',
+                       'PositiveIntegerField': '#,##',
+                       'PositiveSmallIntegerField': '#,##',
+                       'BigIntegerField': '#,##',
+                       'DecimalField': '#,##0.00',
+                       'BooleanField': 'boolean',
+                       'NullBooleanField': 'boolean',
+                       'EmailField': lambda value: 'HYPERLINK("mailto:%s","%s")' % (value, value),
+                       'URLField': lambda value: 'HYPERLINK("%s","%s")' % (value, value),
+                       'CurrencyColumn': '"$"#,##0.00);[Red]("$"#,##0.00)', }
+
+
+# def export_xlsx(modeladmin, request, queryset):
+def xport_xlsx(queryset, fields=None, header=None, filename=None, options=None, out=None):
+    import openpyxl
+    from openpyxl.cell import get_column_letter
+
+    if out is None:
+        if filename is None:
+            filename = filename or "%s.xlsx" % queryset.model._meta.verbose_name_plural.lower().replace(" ", "_")
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment;filename="%s"' % filename.encode('us-ascii', 'replace')
+    else:
+        response = out
+
+    config = xls_options_default.copy()
+    if options:
+        config.update(options)
+
+    book = openpyxl.Workbook()
+    sheet = book.get_active_sheet()
+    sheet.title = config.pop('sheet_name')
+    if fields is None:
+        fields = [f.name for f in queryset.model._meta.fields]
+
+    if header:
+        if not isinstance(header, (list, tuple)):
+            header = [unicode(f.verbose_name) for f in queryset.model._meta.fields if f.name in fields]
+
+        for col, fieldname in enumerate(header, start=1):
+            c = sheet.cell(row=0, column=col)
+            c.value = fieldname
+            c.style.font.bold = True
+
+            # sheet.write(row, col, fieldname, heading_xf)
+            # sheet.col(col).width = 5000
+
+    # sheet.row(row).height = 500
+    # formats = _get_qs_formats(queryset)
+
+    # for col_num, col_name in enumerate(fields):
+    #     c = sheet.cell(row=0, column=col_num)
+    #     c.value = col_name
+    #     c.style.font.bold = True
+    #     # set column width
+        # sheet.column_dimensions[get_column_letter(col_num+1)].width = columns[col_num][1]
+
+    for rownum, row in enumerate(queryset):
+        # sheet.write(rownum + 1, 0, rownum + 1)
+        for col_num, fieldname in enumerate(fields):
+            c = sheet.cell(row=rownum, column=col_num)
+            value = get_field_value(row, fieldname, usedisplay=False, raw_callable=False)
+            c.value = value
+            c.style.alignment.wrap_text = True
+
+    book.save(response)
+    return response
+

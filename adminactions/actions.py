@@ -1,12 +1,13 @@
 # pylint: disable-msg= W0611
 from .merge import merge
 from .mass_update import mass_update
-from .export import export_as_fixture, export_as_csv, export_delete_tree, export_as_xls
+from .export import export_as_fixture, export_as_csv, export_delete_tree, export_as_xls, export_as_xlsx
 from .graph import graph_queryset
 
 actions = [export_as_fixture,
            export_as_csv,
            export_as_xls,
+           export_as_xlsx,
            export_delete_tree,
            merge, mass_update,
            graph_queryset]

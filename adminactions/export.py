@@ -14,7 +14,7 @@ from django.utils.safestring import mark_safe
 from django.contrib.admin import helpers
 from django.core import serializers as ser
 from adminactions.exceptions import ActionInterrupted
-from adminactions.forms import CSVOptions, XLSOptions
+from adminactions.forms import CSVOptions, XLSOptions, XLSXOptions
 from adminactions.models import get_permission_codename
 from adminactions.signals import adminaction_requested, adminaction_start, adminaction_end
 from adminactions.api import export_as_csv as _export_as_csv, export_as_xls as _export_as_xls
@@ -127,6 +127,58 @@ def export_as_xls(modeladmin, request, queryset):
 
 export_as_xls.short_description = _("Export as XLS")
 
+
+def export_as_xlsx(modeladmin, request, queryset):
+    return base_export(modeladmin, request, queryset,
+                       impl=_export_as_xls,
+                       name='export_as_xls',
+                       title=_('Export as XLSX'),
+                       template='adminactions/export_xlsx.html',
+                       form_class=XLSXOptions)
+
+
+export_as_xls.short_description = _("Export as XLSX")
+
+# def export_xlsx(modeladmin, request, queryset):
+#     import openpyxl
+#     from openpyxl.cell import get_column_letter
+#     response = HttpResponse(mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+#     response['Content-Disposition'] = 'attachment; filename=mymodel.xlsx'
+#     wb = openpyxl.Workbook()
+#     ws = wb.get_active_sheet()
+#     ws.title = "MyModel"
+#
+#     row_num = 0
+#
+#     columns = [
+#         (u"ID", 15),
+#         (u"Title", 70),
+#         (u"Description", 70),
+#     ]
+#
+#     for col_num in xrange(len(columns)):
+#         c = ws.cell(row=row_num, column=col_num)
+#         c.value = columns[col_num][0]
+#         c.style.font.bold = True
+#         # set column width
+#         ws.column_dimensions[get_column_letter(col_num+1)].width = columns[col_num][1]
+#
+#     for obj in queryset:
+#         row_num += 1
+#         row = [
+#             obj.pk,
+#             obj.title,
+#             obj.description,
+#         ]
+#         for col_num in xrange(len(row)):
+#             c = ws.cell(row=row_num, column=col_num)
+#             c.value = row[col_num]
+#             c.style.alignment.wrap_text = True
+#
+#     wb.save(response)
+#     return response
+#
+# export_xlsx.short_description = _("Export XLSX")
 
 class FlatCollector(object):
     def __init__(self, using):
